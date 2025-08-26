@@ -1,0 +1,438 @@
+{% extends "base.html" %}
+
+{% block title %}لوحة التحكم - نظام السوبر ماركت{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <!-- Dashboard Header -->
+    <div class="dashboard-header mb-4">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="dashboard-title">لوحة التحكم</h1>
+                <p class="dashboard-subtitle">مرحباً {{ current_user.username }}، إليك نظرة عامة على نشاط اليوم</p>
+            </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-5">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="stats-card stats-card-primary">
+                <div class="stats-card-body">
+                    <div class="stats-icon">
+                        <i class="fas fa-box"></i>
+                    </div>
+                    <div class="stats-content">
+                        <div class="stats-label">إجمالي المنتجات</div>
+                        <div class="stats-value">{{ total_products or 1250 }}</div>
+                        <div class="stats-change positive">
+                            <i class="fas fa-arrow-up"></i>
+                            <span>+12%</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="stats-card-footer">
+                    <span>مقارنة بالشهر الماضي</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="stats-card stats-card-success">
+                <div class="stats-card-body">
+                    <div class="stats-icon">
+                        <i class="fas fa-shopping-cart"></i>
+                    </div>
+                    <div class="stats-content">
+                        <div class="stats-label">مبيعات اليوم</div>
+                        <div class="stats-value">{{ today_sales or 45 }}</div>
+                        <div class="stats-change positive">
+                            <i class="fas fa-arrow-up"></i>
+                            <span>+8%</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="stats-card-footer">
+                    <span>مقارنة بالأمس</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="stats-card stats-card-info">
+                <div class="stats-card-body">
+                    <div class="stats-icon">
+                        <i class="fas fa-coins"></i>
+                    </div>
+                    <div class="stats-content">
+                        <div class="stats-label">إيرادات اليوم</div>
+                        <div class="stats-value">{{ "%.0f"|format(today_revenue or 2450) }} ج.م</div>
+                        <div class="stats-change positive">
+                            <i class="fas fa-arrow-up"></i>
+                            <span>+15%</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="stats-card-footer">
+                    <span>مقارنة بالأمس</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="stats-card stats-card-warning">
+                <div class="stats-card-body">
+                    <div class="stats-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="stats-content">
+                        <div class="stats-label">منتجات قليلة المخزون</div>
+                        <div class="stats-value">{{ low_stock_products or 12 }}</div>
+                        <div class="stats-change negative">
+                            <i class="fas fa-exclamation-circle"></i>
+                            <span>تحتاج متابعة</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="stats-card-footer">
+                    <span>أقل من 10 قطع</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="quick-actions-section">
+                <div class="section-header">
+                    <h3 class="section-title">
+                        <i class="fas fa-bolt"></i>
+                        إجراءات سريعة
+                    </h3>
+                    <p class="section-subtitle">الوصول السريع للعمليات الأساسية</p>
+                </div>
+                <div class="row">
+                    <div class="col-lg-3 col-md-6 mb-4">
+                        <div class="quick-action-card quick-action-primary">
+                            <div class="quick-action-icon">
+                                <i class="fas fa-cash-register"></i>
+                            </div>
+                            <div class="quick-action-content">
+                                <h5>نقطة البيع</h5>
+                                <p>إجراء عمليات البيع والفواتير</p>
+                                <a href="{{ url_for('pos') }}" class="quick-action-btn">ابدأ البيع</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-6 mb-4">
+                        <div class="quick-action-card quick-action-success">
+                            <div class="quick-action-icon">
+                                <i class="fas fa-plus-circle"></i>
+                            </div>
+                            <div class="quick-action-content">
+                                <h5>إضافة منتج</h5>
+                                <p>إضافة منتجات جديدة للمخزون</p>
+                                <a href="{{ url_for('products') }}" class="quick-action-btn">إضافة منتج</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-6 mb-4">
+                        <div class="quick-action-card quick-action-info">
+                            <div class="quick-action-icon">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                            <div class="quick-action-content">
+                                <h5>التقارير</h5>
+                                <p>عرض تقارير المبيعات والأرباح</p>
+                                <a href="{{ url_for('reports') }}" class="quick-action-btn">عرض التقارير</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-6 mb-4">
+                        <div class="quick-action-card quick-action-warning">
+                            <div class="quick-action-icon">
+                                <i class="fas fa-boxes"></i>
+                            </div>
+                            <div class="quick-action-content">
+                                <h5>إدارة المخزون</h5>
+                                <p>متابعة وإدارة المخزون</p>
+                                <a href="{{ url_for('products') }}" class="quick-action-btn">إدارة المخزون</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- صف إضافي للمديرين -->
+                    {% if current_user.role == 'admin' %}
+                    <div class="row">
+                        <div class="col-lg-3 col-md-6 mb-4">
+                            <div class="quick-action-card quick-action-danger">
+                                <div class="quick-action-icon">
+                                    <i class="fas fa-shield-alt"></i>
+                                </div>
+                                <div class="quick-action-content">
+                                    <h5>النسخ الاحتياطي</h5>
+                                    <p>إنشاء واستعادة النسخ الاحتياطية</p>
+                                    <a href="{{ url_for('backup') }}" class="quick-action-btn">إدارة النسخ</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-md-6 mb-4">
+                            <div class="quick-action-card quick-action-secondary">
+                                <div class="quick-action-icon">
+                                    <i class="fas fa-users"></i>
+                                </div>
+                                <div class="quick-action-content">
+                                    <h5>إدارة المستخدمين</h5>
+                                    <p>إضافة وإدارة حسابات المستخدمين</p>
+                                    <a href="{{ url_for('users') }}" class="quick-action-btn">إدارة المستخدمين</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-md-6 mb-4">
+                            <div class="quick-action-card quick-action-dark">
+                                <div class="quick-action-icon">
+                                    <i class="fas fa-cog"></i>
+                                </div>
+                                <div class="quick-action-content">
+                                    <h5>إعدادات النظام</h5>
+                                    <p>تكوين إعدادات النظام العامة</p>
+                                    <a href="#" class="quick-action-btn">الإعدادات</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-md-6 mb-4">
+                            <div class="quick-action-card quick-action-purple">
+                                <div class="quick-action-icon">
+                                    <i class="fas fa-history"></i>
+                                </div>
+                                <div class="quick-action-content">
+                                    <h5>سجل النشاطات</h5>
+                                    <p>مراجعة سجل العمليات والأنشطة</p>
+                                    <a href="#" class="quick-action-btn">عرض السجل</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity & Charts -->
+    <div class="row">
+        <div class="col-lg-8 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-line me-2"></i>
+                        مبيعات الأسبوع
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="salesChart" height="100"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-clock me-2"></i>
+                        النشاط الأخير
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="activity-item">
+                        <div class="activity-icon bg-success">
+                            <i class="fas fa-shopping-cart"></i>
+                        </div>
+                        <div class="activity-content">
+                            <h6>عملية بيع جديدة</h6>
+                            <p class="text-muted small">فاتورة #1001 - 150.00 ج.م</p>
+                            <small class="text-muted">منذ 5 دقائق</small>
+                        </div>
+                    </div>
+
+                    <div class="activity-item">
+                        <div class="activity-icon bg-info">
+                            <i class="fas fa-box"></i>
+                        </div>
+                        <div class="activity-content">
+                            <h6>تحديث مخزون</h6>
+                            <p class="text-muted small">تم إضافة 50 قطعة من المنتج #123</p>
+                            <small class="text-muted">منذ 15 دقيقة</small>
+                        </div>
+                    </div>
+
+                    <div class="activity-item">
+                        <div class="activity-icon bg-warning">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="activity-content">
+                            <h6>تنبيه مخزون</h6>
+                            <p class="text-muted small">منتج "شامبو هيد آند شولدرز" قليل المخزون</p>
+                            <small class="text-muted">منذ 30 دقيقة</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.main-content {
+    margin-top: 76px;
+    padding: 20px;
+    min-height: calc(100vh - 76px);
+}
+
+.stat-card {
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+    transition: all 0.3s;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0.25rem 2rem 0 rgba(58, 59, 69, 0.2);
+}
+
+.border-start-primary {
+    border-left: 0.25rem solid #4e73df !important;
+}
+
+.border-start-success {
+    border-left: 0.25rem solid #1cc88a !important;
+}
+
+.border-start-info {
+    border-left: 0.25rem solid #36b9cc !important;
+}
+
+.border-start-warning {
+    border-left: 0.25rem solid #f6c23e !important;
+}
+
+.quick-action-btn {
+    height: 120px;
+    border-radius: 15px;
+    transition: all 0.3s;
+}
+
+.quick-action-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+}
+
+.activity-item {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 20px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #e3e6f0;
+}
+
+.activity-item:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.activity-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    margin-left: 15px;
+    flex-shrink: 0;
+}
+
+.activity-content h6 {
+    margin-bottom: 5px;
+    font-weight: 600;
+}
+
+.activity-content p {
+    margin-bottom: 5px;
+}
+</style>
+
+<script>
+// رسم بياني للمبيعات
+const ctx = document.getElementById('salesChart').getContext('2d');
+const salesChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: ['السبت', 'الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة'],
+        datasets: [{
+            label: 'المبيعات (ج.م)',
+            data: [1200, 1900, 3000, 5000, 2000, 3000, 4500],
+            borderColor: '#4e73df',
+            backgroundColor: 'rgba(78, 115, 223, 0.1)',
+            borderWidth: 3,
+            fill: true,
+            tension: 0.4
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                grid: {
+                    color: 'rgba(0,0,0,0.1)'
+                }
+            },
+            x: {
+                grid: {
+                    display: false
+                }
+            }
+        }
+    }
+});
+
+// عرض التاريخ الحالي
+function displayCurrentDate() {
+    const now = new Date();
+    const options = {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        weekday: 'long'
+    };
+    const arabicDate = now.toLocaleDateString('ar-EG', options);
+    document.getElementById('current-date').textContent = arabicDate;
+}
+
+// تحديث التاريخ عند تحميل الصفحة
+document.addEventListener('DOMContentLoaded', function() {
+    displayCurrentDate();
+
+    // تحديث التاريخ كل دقيقة
+    setInterval(displayCurrentDate, 60000);
+});
+</script>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}

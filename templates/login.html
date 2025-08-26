@@ -1,0 +1,216 @@
+{% extends "base.html" %}
+
+{% block title %}تسجيل الدخول - نظام السوبر ماركت{% endblock %}
+
+{% block extra_css %}
+<link href="{{ url_for('static', filename='css/login.css') }}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="login-container">
+    <!-- خلفية متحركة -->
+    <div class="animated-background">
+        <div class="floating-shapes">
+            <div class="shape shape-1"></div>
+            <div class="shape shape-2"></div>
+            <div class="shape shape-3"></div>
+            <div class="shape shape-4"></div>
+            <div class="shape shape-5"></div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="row justify-content-center align-items-center min-vh-100">
+            <div class="col-md-10 col-lg-8 col-xl-6">
+                <div class="login-wrapper">
+                    <!-- الجانب الأيسر - معلومات النظام -->
+                    <div class="login-info">
+                        <div class="info-content">
+                            <div class="brand-logo">
+                                <div class="logo-icon">
+                                    <i class="fas fa-store"></i>
+                                </div>
+                                <h1 class="brand-title">سوبر ماركت</h1>
+                                <p class="brand-subtitle">نظام إدارة شامل ومتطور</p>
+                            </div>
+
+                            <div class="features-list">
+                                <div class="feature-item">
+                                    <i class="fas fa-chart-line"></i>
+                                    <span>تقارير مفصلة ومتقدمة</span>
+                                </div>
+                                <div class="feature-item">
+                                    <i class="fas fa-users"></i>
+                                    <span>إدارة العملاء والموظفين</span>
+                                </div>
+                                <div class="feature-item">
+                                    <i class="fas fa-box"></i>
+                                    <span>إدارة المخزون والمنتجات</span>
+                                </div>
+                                <div class="feature-item">
+                                    <i class="fas fa-cash-register"></i>
+                                    <span>نقطة بيع متطورة</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- الجانب الأيمن - نموذج تسجيل الدخول -->
+                    <div class="login-form-section">
+                        <div class="login-card">
+                            <div class="card-header">
+                                <h2 class="login-title">مرحباً بك</h2>
+                                <p class="login-subtitle">يرجى تسجيل الدخول للوصول إلى النظام</p>
+                            </div>
+
+                            <form method="POST" class="login-form">
+                                <div class="form-group">
+                                    <label for="username" class="form-label">
+                                        <i class="fas fa-user"></i>
+                                        اسم المستخدم
+                                    </label>
+                                    <div class="input-wrapper">
+                                        <input type="text" class="form-control" id="username" name="username"
+                                               placeholder="أدخل اسم المستخدم" required>
+                                        <div class="input-focus-border"></div>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="password" class="form-label">
+                                        <i class="fas fa-lock"></i>
+                                        كلمة المرور
+                                    </label>
+                                    <div class="input-wrapper">
+                                        <input type="password" class="form-control" id="password" name="password"
+                                               placeholder="أدخل كلمة المرور" required>
+                                        <button class="password-toggle" type="button" id="togglePassword">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <div class="input-focus-border"></div>
+                                    </div>
+                                </div>
+
+                                <div class="form-options">
+                                    <div class="remember-me">
+                                        <input type="checkbox" class="custom-checkbox" id="remember">
+                                        <label class="checkbox-label" for="remember">
+                                            <span class="checkmark"></span>
+                                            تذكرني
+                                        </label>
+                                    </div>
+                                    <a href="#" class="forgot-password">نسيت كلمة المرور؟</a>
+                                </div>
+
+                                <button type="submit" class="login-btn">
+                                    <span class="btn-text">
+                                        <i class="fas fa-sign-in-alt"></i>
+                                        تسجيل الدخول
+                                    </span>
+                                    <div class="btn-loading">
+                                        <div class="spinner"></div>
+                                    </div>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- معلومات تسجيل الدخول -->
+    <div class="login-info-footer">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-md-6 text-center">
+                    <div class="demo-credentials">
+                        <h6>بيانات تجريبية للدخول:</h6>
+                        <p><strong>المستخدم:</strong> admin | <strong>كلمة المرور:</strong> admin123</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const togglePassword = document.getElementById('togglePassword');
+    const passwordInput = document.getElementById('password');
+    const loginForm = document.querySelector('.login-form');
+    const loginBtn = document.querySelector('.login-btn');
+
+    // تبديل إظهار/إخفاء كلمة المرور
+    if (togglePassword && passwordInput) {
+        togglePassword.addEventListener('click', function() {
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+
+            const icon = this.querySelector('i');
+            icon.classList.toggle('fa-eye');
+            icon.classList.toggle('fa-eye-slash');
+        });
+    }
+
+    // تأثير تحميل عند إرسال النموذج
+    if (loginForm && loginBtn) {
+        loginForm.addEventListener('submit', function(e) {
+            loginBtn.classList.add('loading');
+            loginBtn.disabled = true;
+
+            // إزالة حالة التحميل بعد 3 ثوان (في حالة عدم إعادة التوجيه)
+            setTimeout(() => {
+                loginBtn.classList.remove('loading');
+                loginBtn.disabled = false;
+            }, 3000);
+        });
+    }
+
+    // تأثيرات الحركة للأشكال المتحركة
+    const shapes = document.querySelectorAll('.shape');
+    shapes.forEach((shape, index) => {
+        shape.style.animationDelay = `${index * 0.5}s`;
+    });
+
+    // تأثير الكتابة التلقائية للعنوان
+    const brandTitle = document.querySelector('.brand-title');
+    if (brandTitle) {
+        const text = brandTitle.textContent;
+        brandTitle.textContent = '';
+
+        let i = 0;
+        const typeWriter = () => {
+            if (i < text.length) {
+                brandTitle.textContent += text.charAt(i);
+                i++;
+                setTimeout(typeWriter, 100);
+            }
+        };
+
+        setTimeout(typeWriter, 1000);
+    }
+
+    // تأثير ظهور تدريجي للميزات
+    const features = document.querySelectorAll('.feature-item');
+    features.forEach((feature, index) => {
+        feature.style.opacity = '0';
+        feature.style.transform = 'translateX(-20px)';
+
+        setTimeout(() => {
+            feature.style.transition = 'all 0.5s ease';
+            feature.style.opacity = '1';
+            feature.style.transform = 'translateX(0)';
+        }, 2000 + index * 200);
+    });
+
+    // تركيز تلقائي على حقل اسم المستخدم
+    const usernameField = document.getElementById('username');
+    if (usernameField) {
+        usernameField.focus();
+    }
+});
+</script>
+{% endblock %}
+{% endblock %}

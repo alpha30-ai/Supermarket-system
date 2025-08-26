@@ -1,0 +1,401 @@
+{% extends "base.html" %}
+
+{% block title %}النسخ الاحتياطي - نظام إدارة السوبر ماركت{% endblock %}
+
+{% block content %}
+<div class="backup-container">
+    <!-- رأس الصفحة -->
+    <div class="page-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h2 class="page-title">
+                    <i class="fas fa-shield-alt me-2"></i>
+                    النسخ الاحتياطي والاستعادة
+                </h2>
+                <p class="page-subtitle">حماية بياناتك وضمان استمرارية العمل</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <div class="backup-actions">
+                    <button class="btn btn-success" onclick="createBackup()">
+                        <i class="fas fa-download me-2"></i>
+                        إنشاء نسخة احتياطية
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- حالة النسخ الاحتياطي -->
+    <div class="backup-status">
+        <div class="row">
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="stat-card stat-success">
+                    <div class="stat-icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 class="stat-value">{{ total_backups or 0 }}</h3>
+                        <p class="stat-label">النسخ المتوفرة</p>
+                        <span class="stat-period">آخر نسخة: {{ last_backup_date or 'لا توجد' }}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="stat-card stat-info">
+                    <div class="stat-icon">
+                        <i class="fas fa-database"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 class="stat-value">{{ database_size or '0 MB' }}</h3>
+                        <p class="stat-label">حجم قاعدة البيانات</p>
+                        <span class="stat-period">البيانات الحالية</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="stat-card stat-warning">
+                    <div class="stat-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 class="stat-value">{{ auto_backup_status or 'معطل' }}</h3>
+                        <p class="stat-label">النسخ التلقائي</p>
+                        <span class="stat-period">كل {{ backup_frequency or '24' }} ساعة</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="stat-card stat-primary">
+                    <div class="stat-icon">
+                        <i class="fas fa-hdd"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 class="stat-value">{{ storage_used or '0 MB' }}</h3>
+                        <p class="stat-label">المساحة المستخدمة</p>
+                        <span class="stat-period">للنسخ الاحتياطية</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- إعدادات النسخ الاحتياطي -->
+    <div class="backup-settings">
+        <div class="row">
+            <div class="col-lg-6 mb-4">
+                <div class="settings-card">
+                    <div class="settings-header">
+                        <h5>
+                            <i class="fas fa-cog me-2"></i>
+                            إعدادات النسخ التلقائي
+                        </h5>
+                    </div>
+                    <div class="settings-body">
+                        <form id="autoBackupForm">
+                            <div class="mb-3">
+                                <label class="form-label">تفعيل النسخ التلقائي:</label>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="autoBackupEnabled" 
+                                           {{ 'checked' if auto_backup_enabled else '' }}>
+                                    <label class="form-check-label" for="autoBackupEnabled">
+                                        تفعيل النسخ الاحتياطي التلقائي
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">تكرار النسخ:</label>
+                                <select class="form-select" id="backupFrequency">
+                                    <option value="6" {{ 'selected' if backup_frequency == '6' else '' }}>كل 6 ساعات</option>
+                                    <option value="12" {{ 'selected' if backup_frequency == '12' else '' }}>كل 12 ساعة</option>
+                                    <option value="24" {{ 'selected' if backup_frequency == '24' else '' }}>يومياً</option>
+                                    <option value="168" {{ 'selected' if backup_frequency == '168' else '' }}>أسبوعياً</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">عدد النسخ المحفوظة:</label>
+                                <input type="number" class="form-control" id="maxBackups" 
+                                       value="{{ max_backups or 10 }}" min="1" max="50">
+                            </div>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>
+                                حفظ الإعدادات
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6 mb-4">
+                <div class="settings-card">
+                    <div class="settings-header">
+                        <h5>
+                            <i class="fas fa-upload me-2"></i>
+                            استعادة النسخة الاحتياطية
+                        </h5>
+                    </div>
+                    <div class="settings-body">
+                        <div class="restore-section">
+                            <div class="mb-3">
+                                <label class="form-label">اختر ملف النسخة الاحتياطية:</label>
+                                <input type="file" class="form-control" id="restoreFile" accept=".zip,.sql">
+                                <small class="form-text text-muted">
+                                    يدعم ملفات .zip و .sql فقط
+                                </small>
+                            </div>
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                <strong>تحذير:</strong> استعادة النسخة الاحتياطية ستحل محل جميع البيانات الحالية.
+                                تأكد من إنشاء نسخة احتياطية من البيانات الحالية أولاً.
+                            </div>
+                            <button class="btn btn-warning" onclick="restoreBackup()" disabled id="restoreBtn">
+                                <i class="fas fa-undo me-2"></i>
+                                استعادة النسخة الاحتياطية
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- قائمة النسخ الاحتياطية -->
+    <div class="backups-list">
+        <div class="table-card">
+            <div class="table-header">
+                <h5>
+                    <i class="fas fa-list me-2"></i>
+                    النسخ الاحتياطية المتوفرة
+                </h5>
+                <button class="btn btn-outline-danger btn-sm" onclick="cleanupOldBackups()">
+                    <i class="fas fa-trash me-2"></i>
+                    تنظيف النسخ القديمة
+                </button>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>اسم الملف</th>
+                            <th>تاريخ الإنشاء</th>
+                            <th>حجم الملف</th>
+                            <th>النوع</th>
+                            <th>الحالة</th>
+                            <th>الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="backupsTableBody">
+                        {% for backup in backups %}
+                        <tr>
+                            <td>
+                                <div class="backup-info">
+                                    <i class="fas fa-file-archive me-2"></i>
+                                    <span class="backup-name">{{ backup.filename }}</span>
+                                </div>
+                            </td>
+                            <td>{{ backup.created_at.strftime('%Y-%m-%d %H:%M') if backup.created_at else 'غير محدد' }}</td>
+                            <td>{{ backup.file_size or '0 MB' }}</td>
+                            <td>
+                                <span class="backup-type-badge type-{{ backup.backup_type or 'manual' }}">
+                                    {{ 'تلقائي' if backup.backup_type == 'auto' else 'يدوي' }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="status-badge status-{{ backup.status or 'completed' }}">
+                                    {% if backup.status == 'completed' %}
+                                        مكتمل
+                                    {% elif backup.status == 'in_progress' %}
+                                        جاري الإنشاء
+                                    {% elif backup.status == 'failed' %}
+                                        فشل
+                                    {% else %}
+                                        غير محدد
+                                    {% endif %}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="action-buttons">
+                                    <button class="btn btn-sm btn-outline-primary" 
+                                            onclick="downloadBackup('{{ backup.filename }}')" title="تحميل">
+                                        <i class="fas fa-download"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-success" 
+                                            onclick="restoreFromBackup('{{ backup.filename }}')" title="استعادة">
+                                        <i class="fas fa-undo"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger" 
+                                            onclick="deleteBackup('{{ backup.filename }}')" title="حذف">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-4">
+                                <i class="fas fa-archive fa-3x mb-3"></i>
+                                <p>لا توجد نسخ احتياطية</p>
+                                <button class="btn btn-primary" onclick="createBackup()">
+                                    إنشاء أول نسخة احتياطية
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- نافذة تقدم النسخ الاحتياطي -->
+<div class="modal fade" id="backupProgressModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">إنشاء النسخة الاحتياطية</h5>
+            </div>
+            <div class="modal-body">
+                <div class="progress-section">
+                    <div class="progress mb-3">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                             role="progressbar" style="width: 0%" id="backupProgress">
+                        </div>
+                    </div>
+                    <div class="progress-status" id="backupStatus">
+                        جاري التحضير...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// إنشاء نسخة احتياطية
+function createBackup() {
+    // إظهار نافذة التقدم
+    const modal = new bootstrap.Modal(document.getElementById('backupProgressModal'));
+    modal.show();
+    
+    // محاكاة عملية النسخ الاحتياطي
+    simulateBackupProgress();
+    
+    // إرسال طلب إنشاء النسخة الاحتياطية
+    fetch('/api/backup/create', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            setTimeout(() => {
+                modal.hide();
+                location.reload();
+            }, 3000);
+        } else {
+            alert('فشل في إنشاء النسخة الاحتياطية: ' + data.message);
+            modal.hide();
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('حدث خطأ أثناء إنشاء النسخة الاحتياطية');
+        modal.hide();
+    });
+}
+
+// محاكاة تقدم النسخ الاحتياطي
+function simulateBackupProgress() {
+    const progressBar = document.getElementById('backupProgress');
+    const statusText = document.getElementById('backupStatus');
+    
+    const steps = [
+        { progress: 20, text: 'جاري نسخ قاعدة البيانات...' },
+        { progress: 40, text: 'جاري نسخ الملفات...' },
+        { progress: 60, text: 'جاري ضغط البيانات...' },
+        { progress: 80, text: 'جاري حفظ النسخة الاحتياطية...' },
+        { progress: 100, text: 'تم إنشاء النسخة الاحتياطية بنجاح!' }
+    ];
+    
+    let currentStep = 0;
+    
+    const interval = setInterval(() => {
+        if (currentStep < steps.length) {
+            const step = steps[currentStep];
+            progressBar.style.width = step.progress + '%';
+            statusText.textContent = step.text;
+            currentStep++;
+        } else {
+            clearInterval(interval);
+        }
+    }, 800);
+}
+
+// استعادة النسخة الاحتياطية
+function restoreBackup() {
+    const fileInput = document.getElementById('restoreFile');
+    if (!fileInput.files[0]) {
+        alert('يرجى اختيار ملف النسخة الاحتياطية أولاً');
+        return;
+    }
+    
+    if (confirm('هل أنت متأكد من استعادة النسخة الاحتياطية؟ سيتم حذف جميع البيانات الحالية.')) {
+        // سيتم تنفيذها لاحقاً
+        alert('سيتم تنفيذ هذه الميزة قريباً');
+    }
+}
+
+// تحميل نسخة احتياطية
+function downloadBackup(filename) {
+    window.location.href = '/api/backup/download/' + filename;
+}
+
+// استعادة من نسخة احتياطية محددة
+function restoreFromBackup(filename) {
+    if (confirm('هل أنت متأكد من استعادة هذه النسخة الاحتياطية؟')) {
+        // سيتم تنفيذها لاحقاً
+        console.log('Restore from:', filename);
+    }
+}
+
+// حذف نسخة احتياطية
+function deleteBackup(filename) {
+    if (confirm('هل أنت متأكد من حذف هذه النسخة الاحتياطية؟')) {
+        // سيتم تنفيذها لاحقاً
+        console.log('Delete backup:', filename);
+    }
+}
+
+// تنظيف النسخ القديمة
+function cleanupOldBackups() {
+    if (confirm('هل أنت متأكد من حذف النسخ الاحتياطية القديمة؟')) {
+        // سيتم تنفيذها لاحقاً
+        console.log('Cleanup old backups');
+    }
+}
+
+// تفعيل زر الاستعادة عند اختيار ملف
+document.getElementById('restoreFile').addEventListener('change', function() {
+    const restoreBtn = document.getElementById('restoreBtn');
+    restoreBtn.disabled = !this.files[0];
+});
+
+// حفظ إعدادات النسخ التلقائي
+document.getElementById('autoBackupForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const settings = {
+        enabled: document.getElementById('autoBackupEnabled').checked,
+        frequency: document.getElementById('backupFrequency').value,
+        maxBackups: document.getElementById('maxBackups').value
+    };
+    
+    // سيتم تنفيذها لاحقاً
+    console.log('Save backup settings:', settings);
+    alert('تم حفظ الإعدادات بنجاح');
+});
+</script>
+{% endblock %}

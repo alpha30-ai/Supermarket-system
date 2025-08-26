@@ -1,0 +1,483 @@
+{% extends "base.html" %}
+
+{% block title %}التقارير والإحصائيات - نظام إدارة السوبر ماركت{% endblock %}
+
+{% block content %}
+<div class="reports-container">
+    <!-- رأس التقارير -->
+    <div class="page-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h2 class="page-title">
+                    <i class="fas fa-chart-bar me-2"></i>
+                    التقارير والإحصائيات
+                </h2>
+                <p class="page-subtitle">تحليل شامل لأداء المبيعات والمخزون</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <div class="report-actions">
+                    <button class="btn btn-outline-primary" onclick="exportReport()">
+                        <i class="fas fa-download me-2"></i>
+                        تصدير التقرير
+                    </button>
+                    <button class="btn btn-outline-success" onclick="printReport()">
+                        <i class="fas fa-print me-2"></i>
+                        طباعة
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- فلاتر التقارير -->
+    <div class="filters-section">
+        <div class="row">
+            <div class="col-md-3">
+                <label class="form-label">نوع التقرير:</label>
+                <select class="form-select" id="reportType">
+                    <option value="sales">تقرير المبيعات</option>
+                    <option value="products">تقرير المنتجات</option>
+                    <option value="inventory">تقرير المخزون</option>
+                    <option value="financial">التقرير المالي</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">من تاريخ:</label>
+                <input type="date" class="form-control" id="startDate" value="{{ start_date }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">إلى تاريخ:</label>
+                <input type="date" class="form-control" id="endDate" value="{{ end_date }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">&nbsp;</label>
+                <button class="btn btn-primary w-100" onclick="generateReport()">
+                    <i class="fas fa-search me-2"></i>
+                    إنشاء التقرير
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- الإحصائيات السريعة -->
+    <div class="quick-stats">
+        <div class="row">
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="stat-card stat-primary">
+                    <div class="stat-icon">
+                        <i class="fas fa-dollar-sign"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 class="stat-value">{{ "%.2f"|format(total_revenue or 0) }}</h3>
+                        <p class="stat-label">إجمالي الإيرادات</p>
+                        <span class="stat-period">هذا الشهر</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="stat-card stat-success">
+                    <div class="stat-icon">
+                        <i class="fas fa-shopping-cart"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 class="stat-value">{{ total_sales or 0 }}</h3>
+                        <p class="stat-label">عدد المبيعات</p>
+                        <span class="stat-period">هذا الشهر</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="stat-card stat-warning">
+                    <div class="stat-icon">
+                        <i class="fas fa-box"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 class="stat-value">{{ total_products or 0 }}</h3>
+                        <p class="stat-label">إجمالي المنتجات</p>
+                        <span class="stat-period">في المخزون</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="stat-card stat-danger">
+                    <div class="stat-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 class="stat-value">{{ low_stock_products or 0 }}</h3>
+                        <p class="stat-label">منتجات قليلة المخزون</p>
+                        <span class="stat-period">تحتاج إعادة تموين</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- الرسوم البيانية -->
+    <div class="charts-section">
+        <div class="row">
+            <div class="col-lg-8 mb-4">
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h5>
+                            <i class="fas fa-chart-line me-2"></i>
+                            مبيعات آخر 7 أيام
+                        </h5>
+                    </div>
+                    <div class="chart-body">
+                        <canvas id="salesChart" height="300"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4 mb-4">
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h5>
+                            <i class="fas fa-chart-pie me-2"></i>
+                            المبيعات حسب الفئة
+                        </h5>
+                    </div>
+                    <div class="chart-body">
+                        <canvas id="categoryChart" height="300"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- جداول التقارير -->
+    <div class="tables-section">
+        <div class="row">
+            <div class="col-lg-6 mb-4">
+                <div class="table-card">
+                    <div class="table-header">
+                        <h5>
+                            <i class="fas fa-star me-2"></i>
+                            أفضل المنتجات مبيعاً
+                        </h5>
+                    </div>
+                    <div class="table-body">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>المنتج</th>
+                                    <th>الكمية المباعة</th>
+                                    <th>الإيرادات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for product in top_products %}
+                                <tr>
+                                    <td>{{ product.name }}</td>
+                                    <td>{{ product.sold_quantity or 0 }}</td>
+                                    <td>{{ "%.2f"|format(product.revenue or 0) }} ج.م</td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="3" class="text-center text-muted">لا توجد بيانات</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6 mb-4">
+                <div class="table-card">
+                    <div class="table-header">
+                        <h5>
+                            <i class="fas fa-exclamation-circle me-2"></i>
+                            منتجات تحتاج إعادة تموين
+                        </h5>
+                    </div>
+                    <div class="table-body">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>المنتج</th>
+                                    <th>المخزون الحالي</th>
+                                    <th>الحد الأدنى</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for product in low_stock_items %}
+                                <tr>
+                                    <td>{{ product.name }}</td>
+                                    <td>
+                                        <span class="badge bg-warning">{{ product.stock_quantity }}</span>
+                                    </td>
+                                    <td>{{ product.min_stock }}</td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="3" class="text-center text-muted">جميع المنتجات متوفرة</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- تقرير مفصل -->
+    <div class="detailed-report" id="detailedReport" style="display: none;">
+        <div class="report-card">
+            <div class="report-header">
+                <h5>
+                    <i class="fas fa-file-alt me-2"></i>
+                    التقرير المفصل
+                </h5>
+                <div class="report-meta">
+                    <span>تم إنشاؤه في: <span id="reportDate"></span></span>
+                </div>
+            </div>
+            <div class="report-body" id="reportContent">
+                <!-- سيتم ملؤه بـ JavaScript -->
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// متغيرات الرسوم البيانية
+let salesChart, categoryChart;
+
+// تهيئة الصفحة
+document.addEventListener('DOMContentLoaded', function() {
+    initCharts();
+    setDefaultDates();
+});
+
+// تعيين التواريخ الافتراضية
+function setDefaultDates() {
+    const today = new Date();
+    const lastWeek = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+    
+    document.getElementById('endDate').value = today.toISOString().split('T')[0];
+    document.getElementById('startDate').value = lastWeek.toISOString().split('T')[0];
+}
+
+// تهيئة الرسوم البيانية
+function initCharts() {
+    // رسم بياني للمبيعات
+    const salesCtx = document.getElementById('salesChart').getContext('2d');
+    salesChart = new Chart(salesCtx, {
+        type: 'line',
+        data: {
+            labels: ['السبت', 'الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة'],
+            datasets: [{
+                label: 'المبيعات (ج.م)',
+                data: [1200, 1900, 3000, 5000, 2000, 3000, 4500],
+                borderColor: '#28a745',
+                backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return value + ' ج.م';
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // رسم بياني للفئات
+    const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+    categoryChart = new Chart(categoryCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['مواد غذائية', 'مشروبات', 'منظفات', 'أدوات شخصية'],
+            datasets: [{
+                data: [45, 25, 20, 10],
+                backgroundColor: [
+                    '#28a745',
+                    '#17a2b8',
+                    '#ffc107',
+                    '#dc3545'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+}
+
+// إنشاء التقرير
+function generateReport() {
+    const reportType = document.getElementById('reportType').value;
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
+    
+    // إظهار التقرير المفصل
+    document.getElementById('detailedReport').style.display = 'block';
+    document.getElementById('reportDate').textContent = new Date().toLocaleDateString('ar-EG');
+    
+    // محاكاة تحميل البيانات
+    document.getElementById('reportContent').innerHTML = `
+        <div class="text-center p-4">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">جاري التحميل...</span>
+            </div>
+            <p class="mt-2">جاري إنشاء التقرير...</p>
+        </div>
+    `;
+    
+    // محاكاة تأخير التحميل
+    setTimeout(() => {
+        loadReportData(reportType, startDate, endDate);
+    }, 2000);
+}
+
+// تحميل بيانات التقرير
+function loadReportData(type, start, end) {
+    let content = '';
+    
+    switch(type) {
+        case 'sales':
+            content = generateSalesReport(start, end);
+            break;
+        case 'products':
+            content = generateProductsReport(start, end);
+            break;
+        case 'inventory':
+            content = generateInventoryReport();
+            break;
+        case 'financial':
+            content = generateFinancialReport(start, end);
+            break;
+    }
+    
+    document.getElementById('reportContent').innerHTML = content;
+}
+
+// تقرير المبيعات
+function generateSalesReport(start, end) {
+    return `
+        <h6>تقرير المبيعات من ${start} إلى ${end}</h6>
+        <div class="row">
+            <div class="col-md-6">
+                <p><strong>إجمالي المبيعات:</strong> 150 فاتورة</p>
+                <p><strong>إجمالي الإيرادات:</strong> 45,750.00 ج.م</p>
+                <p><strong>متوسط قيمة الفاتورة:</strong> 305.00 ج.م</p>
+            </div>
+            <div class="col-md-6">
+                <p><strong>أفضل يوم مبيعات:</strong> الجمعة</p>
+                <p><strong>أقل يوم مبيعات:</strong> السبت</p>
+                <p><strong>معدل النمو:</strong> +12.5%</p>
+            </div>
+        </div>
+    `;
+}
+
+// تقرير المنتجات
+function generateProductsReport(start, end) {
+    return `
+        <h6>تقرير المنتجات من ${start} إلى ${end}</h6>
+        <div class="table-responsive">
+            <table class="table table-sm">
+                <thead>
+                    <tr>
+                        <th>المنتج</th>
+                        <th>الكمية المباعة</th>
+                        <th>الإيرادات</th>
+                        <th>الربح</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>أرز أبيض مصري</td>
+                        <td>120 كيس</td>
+                        <td>2,160.00 ج.م</td>
+                        <td>360.00 ج.م</td>
+                    </tr>
+                    <tr>
+                        <td>زيت عباد الشمس</td>
+                        <td>85 زجاجة</td>
+                        <td>1,700.00 ج.م</td>
+                        <td>425.00 ج.م</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    `;
+}
+
+// تقرير المخزون
+function generateInventoryReport() {
+    return `
+        <h6>تقرير المخزون الحالي</h6>
+        <div class="row">
+            <div class="col-md-4">
+                <p><strong>إجمالي المنتجات:</strong> 1,250</p>
+                <p><strong>قيمة المخزون:</strong> 125,000.00 ج.م</p>
+            </div>
+            <div class="col-md-4">
+                <p><strong>منتجات قليلة المخزون:</strong> 15</p>
+                <p><strong>منتجات نفد مخزونها:</strong> 3</p>
+            </div>
+            <div class="col-md-4">
+                <p><strong>أعلى فئة قيمة:</strong> مواد غذائية</p>
+                <p><strong>معدل دوران المخزون:</strong> 2.5</p>
+            </div>
+        </div>
+    `;
+}
+
+// التقرير المالي
+function generateFinancialReport(start, end) {
+    return `
+        <h6>التقرير المالي من ${start} إلى ${end}</h6>
+        <div class="row">
+            <div class="col-md-6">
+                <h6>الإيرادات:</h6>
+                <p>المبيعات النقدية: 35,000.00 ج.م</p>
+                <p>المبيعات بالبطاقة: 10,750.00 ج.م</p>
+                <p><strong>إجمالي الإيرادات: 45,750.00 ج.م</strong></p>
+            </div>
+            <div class="col-md-6">
+                <h6>المصروفات:</h6>
+                <p>تكلفة البضاعة المباعة: 32,000.00 ج.م</p>
+                <p>مصروفات تشغيلية: 5,000.00 ج.م</p>
+                <p><strong>صافي الربح: 8,750.00 ج.م</strong></p>
+            </div>
+        </div>
+    `;
+}
+
+// تصدير التقرير
+function exportReport() {
+    alert('سيتم تصدير التقرير قريباً');
+}
+
+// طباعة التقرير
+function printReport() {
+    window.print();
+}
+</script>
+{% endblock %}
