@@ -1,0 +1,373 @@
+{% extends "base.html" %}
+
+{% block title %}إدارة العملاء - نظام إدارة السوبر ماركت{% endblock %}
+
+{% block content %}
+<div class="customers-container">
+    <!-- رأس الصفحة -->
+    <div class="page-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h2 class="page-title">
+                    <i class="fas fa-users me-2"></i>
+                    إدارة العملاء
+                </h2>
+                <p class="page-subtitle">إدارة قاعدة بيانات العملاء وبرنامج الولاء</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCustomerModal">
+                    <i class="fas fa-plus me-2"></i>
+                    إضافة عميل جديد
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- إحصائيات العملاء -->
+    <div class="customers-stats">
+        <div class="row">
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="stat-card stat-primary">
+                    <div class="stat-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 class="stat-value">{{ total_customers or 0 }}</h3>
+                        <p class="stat-label">إجمالي العملاء</p>
+                        <span class="stat-period">+{{ new_customers_this_month or 0 }} هذا الشهر</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="stat-card stat-success">
+                    <div class="stat-icon">
+                        <i class="fas fa-star"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 class="stat-value">{{ vip_customers or 0 }}</h3>
+                        <p class="stat-label">عملاء VIP</p>
+                        <span class="stat-period">برنامج الولاء</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="stat-card stat-warning">
+                    <div class="stat-icon">
+                        <i class="fas fa-shopping-cart"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 class="stat-value">{{ avg_purchases or '0.00' }} ج.م</h3>
+                        <p class="stat-label">متوسط المشتريات</p>
+                        <span class="stat-period">لكل عميل</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="stat-card stat-info">
+                    <div class="stat-icon">
+                        <i class="fas fa-coins"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 class="stat-value">{{ total_points or 0 }}</h3>
+                        <p class="stat-label">إجمالي النقاط</p>
+                        <span class="stat-period">برنامج الولاء</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- فلاتر البحث -->
+    <div class="filters-section">
+        <div class="row">
+            <div class="col-md-4">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" class="form-control" id="customerSearch" 
+                           placeholder="ابحث عن عميل...">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <select class="form-select" id="customerTypeFilter">
+                    <option value="">جميع الأنواع</option>
+                    <option value="regular">عادي</option>
+                    <option value="vip">VIP</option>
+                    <option value="premium">مميز</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select class="form-select" id="statusFilter">
+                    <option value="">جميع الحالات</option>
+                    <option value="active">نشط</option>
+                    <option value="inactive">غير نشط</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-outline-primary w-100" onclick="filterCustomers()">
+                    <i class="fas fa-filter me-2"></i>
+                    فلترة
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- جدول العملاء -->
+    <div class="customers-table-section">
+        <div class="table-card">
+            <div class="table-header">
+                <h5>
+                    <i class="fas fa-list me-2"></i>
+                    قائمة العملاء
+                </h5>
+                <div class="table-actions">
+                    <button class="btn btn-outline-success btn-sm" onclick="exportCustomers()">
+                        <i class="fas fa-file-excel me-2"></i>
+                        تصدير Excel
+                    </button>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>الاسم</th>
+                            <th>رقم الهاتف</th>
+                            <th>البريد الإلكتروني</th>
+                            <th>النوع</th>
+                            <th>النقاط</th>
+                            <th>إجمالي المشتريات</th>
+                            <th>تاريخ التسجيل</th>
+                            <th>الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="customersTableBody">
+                        {% for customer in customers %}
+                        <tr>
+                            <td>
+                                <div class="customer-info">
+                                    <div class="customer-avatar">
+                                        <i class="fas fa-user"></i>
+                                    </div>
+                                    <div class="customer-details">
+                                        <h6 class="customer-name">{{ customer.name }}</h6>
+                                        <small class="customer-id">ID: {{ customer.id }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>{{ customer.phone or 'غير محدد' }}</td>
+                            <td>{{ customer.email or 'غير محدد' }}</td>
+                            <td>
+                                <span class="customer-type-badge type-{{ customer.customer_type or 'regular' }}">
+                                    {% if customer.customer_type == 'vip' %}
+                                        VIP
+                                    {% elif customer.customer_type == 'premium' %}
+                                        مميز
+                                    {% else %}
+                                        عادي
+                                    {% endif %}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="points-badge">
+                                    <i class="fas fa-coins me-1"></i>
+                                    {{ customer.loyalty_points or 0 }}
+                                </span>
+                            </td>
+                            <td>{{ "%.2f"|format(customer.total_purchases or 0) }} ج.م</td>
+                            <td>{{ customer.created_at.strftime('%Y-%m-%d') if customer.created_at else 'غير محدد' }}</td>
+                            <td>
+                                <div class="action-buttons">
+                                    <button class="btn btn-sm btn-outline-primary" 
+                                            onclick="viewCustomer({{ customer.id }})" title="عرض">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-warning" 
+                                            onclick="editCustomer({{ customer.id }})" title="تعديل">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-success" 
+                                            onclick="addPoints({{ customer.id }})" title="إضافة نقاط">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="8" class="text-center text-muted py-4">
+                                <i class="fas fa-users fa-3x mb-3"></i>
+                                <p>لا توجد عملاء</p>
+                                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCustomerModal">
+                                    إضافة أول عميل
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- نافذة إضافة عميل -->
+<div class="modal fade" id="addCustomerModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">إضافة عميل جديد</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="addCustomerForm" method="POST" action="{{ url_for('add_customer') }}">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">الاسم الكامل *</label>
+                            <input type="text" class="form-control" name="name" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">رقم الهاتف *</label>
+                            <input type="tel" class="form-control" name="phone" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">البريد الإلكتروني</label>
+                            <input type="email" class="form-control" name="email">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">نوع العميل</label>
+                            <select class="form-select" name="customer_type">
+                                <option value="regular">عادي</option>
+                                <option value="vip">VIP</option>
+                                <option value="premium">مميز</option>
+                            </select>
+                        </div>
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label">العنوان</label>
+                            <textarea class="form-control" name="address" rows="3"></textarea>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">تاريخ الميلاد</label>
+                            <input type="date" class="form-control" name="birth_date">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">النقاط الأولية</label>
+                            <input type="number" class="form-control" name="loyalty_points" value="0" min="0">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-primary">إضافة العميل</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- نافذة إضافة نقاط -->
+<div class="modal fade" id="addPointsModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">إضافة نقاط ولاء</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="addPointsForm">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">عدد النقاط</label>
+                        <input type="number" class="form-control" id="pointsAmount" min="1" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">سبب الإضافة</label>
+                        <select class="form-select" id="pointsReason">
+                            <option value="purchase">مشتريات</option>
+                            <option value="bonus">مكافأة</option>
+                            <option value="promotion">عرض ترويجي</option>
+                            <option value="other">أخرى</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">ملاحظات</label>
+                        <textarea class="form-control" id="pointsNotes" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-success">إضافة النقاط</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// فلترة العملاء
+function filterCustomers() {
+    const search = document.getElementById('customerSearch').value;
+    const type = document.getElementById('customerTypeFilter').value;
+    const status = document.getElementById('statusFilter').value;
+    
+    // إعادة توجيه مع المعاملات
+    const params = new URLSearchParams();
+    if (search) params.append('search', search);
+    if (type) params.append('type', type);
+    if (status) params.append('status', status);
+    
+    window.location.href = '{{ url_for("customers") }}?' + params.toString();
+}
+
+// عرض تفاصيل العميل
+function viewCustomer(customerId) {
+    // سيتم تنفيذها لاحقاً
+    console.log('View customer:', customerId);
+}
+
+// تعديل العميل
+function editCustomer(customerId) {
+    // سيتم تنفيذها لاحقاً
+    console.log('Edit customer:', customerId);
+}
+
+// إضافة نقاط
+function addPoints(customerId) {
+    // إظهار نافذة إضافة النقاط
+    const modal = new bootstrap.Modal(document.getElementById('addPointsModal'));
+    modal.show();
+    
+    // حفظ معرف العميل
+    document.getElementById('addPointsForm').dataset.customerId = customerId;
+}
+
+// تصدير العملاء
+function exportCustomers() {
+    // سيتم تنفيذها لاحقاً
+    alert('سيتم تنفيذ تصدير Excel قريباً');
+}
+
+// البحث المباشر
+document.getElementById('customerSearch').addEventListener('input', function() {
+    // سيتم تنفيذها لاحقاً للبحث المباشر
+});
+
+// معالج إضافة النقاط
+document.getElementById('addPointsForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const customerId = this.dataset.customerId;
+    const points = document.getElementById('pointsAmount').value;
+    const reason = document.getElementById('pointsReason').value;
+    const notes = document.getElementById('pointsNotes').value;
+    
+    // سيتم تنفيذها لاحقاً
+    console.log('Add points:', { customerId, points, reason, notes });
+    
+    // إغلاق النافذة
+    bootstrap.Modal.getInstance(document.getElementById('addPointsModal')).hide();
+    
+    alert('تم إضافة النقاط بنجاح');
+});
+</script>
+{% endblock %}

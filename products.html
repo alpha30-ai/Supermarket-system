@@ -1,0 +1,376 @@
+{% extends "base.html" %}
+
+{% block title %}إدارة المنتجات - نظام السوبر ماركت{% endblock %}
+
+{% block content %}
+<div class="products-container">
+    <!-- Page Header -->
+    <div class="page-header mb-4">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="page-title">
+                    <i class="fas fa-boxes me-3"></i>
+                    إدارة المنتجات
+                </h1>
+                <p class="page-subtitle">إضافة وتعديل وإدارة جميع منتجات المتجر</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <button class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#addProductModal">
+                    <i class="fas fa-plus me-2"></i>
+                    إضافة منتج جديد
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search and Filter Section -->
+    <div class="search-filter-section mb-4">
+        <div class="row">
+            <div class="col-md-4">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="searchProducts" class="form-control" placeholder="البحث عن منتج...">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <select class="form-select" id="categoryFilter">
+                    <option value="">جميع الفئات</option>
+                    {% for category in categories %}
+                    <option value="{{ category.id }}" {% if category_filter == category.id|string %}selected{% endif %}>
+                        {{ category.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select class="form-select" id="stockFilter">
+                    <option value="">جميع المنتجات</option>
+                    <option value="in_stock">متوفر</option>
+                    <option value="low_stock">مخزون قليل</option>
+                    <option value="out_of_stock">نفد المخزون</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-outline-secondary w-100" onclick="resetFilters()">
+                    <i class="fas fa-undo me-2"></i>
+                    إعادة تعيين
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Products Table -->
+    <div class="products-table-section">
+        <div class="table-responsive">
+            <table class="table table-hover products-table" id="productsTable">
+                <thead>
+                    <tr>
+                        <th>الصورة</th>
+                        <th>اسم المنتج</th>
+                        <th>الباركود</th>
+                        <th>الفئة</th>
+                        <th>سعر الشراء</th>
+                        <th>سعر البيع</th>
+                        <th>المخزون</th>
+                        <th>الحالة</th>
+                        <th>الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody id="productsTableBody">
+                    {% for product in products.items %}
+                    <tr>
+                        <td>
+                            <div class="product-image">
+                                <img src="{{ product.image_url or '/static/images/default-product.png' }}" alt="{{ product.name }}" onerror="this.src='/static/images/no-image.png'">
+                            </div>
+                        </td>
+                        <td>
+                            <div class="product-info">
+                                <h6 class="product-name">{{ product.name }}</h6>
+                                <small class="product-description">{{ product.description or product.unit }}</small>
+                            </div>
+                        </td>
+                        <td><span class="barcode">{{ product.barcode or 'غير محدد' }}</span></td>
+                        <td>
+                            <span class="category-badge category-{{ product.category.name.lower() if product.category else 'default' }}">
+                                {{ product.category.name if product.category else 'غير محدد' }}
+                            </span>
+                        </td>
+                        <td><span class="price">{{ "%.2f"|format(product.cost_price) }} ج.م</span></td>
+                        <td><span class="price">{{ "%.2f"|format(product.price) }} ج.م</span></td>
+                        <td>
+                            <div class="stock-info">
+                                <span class="stock-number">{{ product.stock_quantity }}</span>
+                                <small class="stock-unit">{{ product.unit }}</small>
+                            </div>
+                        </td>
+                        <td>
+                            {% if product.stock_quantity == 0 %}
+                                <span class="status-badge status-out-of-stock">نفد المخزون</span>
+                            {% elif product.stock_quantity <= product.min_stock %}
+                                <span class="status-badge status-low-stock">مخزون قليل</span>
+                            {% else %}
+                                <span class="status-badge status-in-stock">متوفر</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="btn btn-sm btn-outline-primary" onclick="editProduct({{ product.id }})" title="تعديل">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-info" onclick="viewProduct({{ product.id }})" title="عرض">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" onclick="deleteProduct({{ product.id }})" title="حذف">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="9" class="text-center py-4">
+                            <div class="no-data">
+                                <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
+                                <h5 class="text-muted">لا توجد منتجات</h5>
+                                <p class="text-muted">لم يتم العثور على أي منتجات مطابقة للبحث</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    {% if products.pages > 1 %}
+    <div class="pagination-section mt-4">
+        <nav aria-label="صفحات المنتجات">
+            <ul class="pagination justify-content-center">
+                {% if products.has_prev %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('products', page=products.prev_num, search=search, category=category_filter, stock=stock_filter) }}">السابق</a>
+                </li>
+                {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link">السابق</span>
+                </li>
+                {% endif %}
+
+                {% for page_num in products.iter_pages() %}
+                    {% if page_num %}
+                        {% if page_num != products.page %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('products', page=page_num, search=search, category=category_filter, stock=stock_filter) }}">{{ page_num }}</a>
+                        </li>
+                        {% else %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ page_num }}</span>
+                        </li>
+                        {% endif %}
+                    {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">...</span>
+                    </li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if products.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('products', page=products.next_num, search=search, category=category_filter, stock=stock_filter) }}">التالي</a>
+                </li>
+                {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link">التالي</span>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Add Product Modal -->
+<div class="modal fade" id="addProductModal" tabindex="-1" aria-labelledby="addProductModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addProductModalLabel">
+                    <i class="fas fa-plus me-2"></i>
+                    إضافة منتج جديد
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addProductForm" action="{{ url_for('add_product') }}" method="POST" enctype="multipart/form-data">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="productName" class="form-label">اسم المنتج *</label>
+                                <input type="text" class="form-control" id="productName" name="name" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="productBarcode" class="form-label">الباركود</label>
+                                <input type="text" class="form-control" id="productBarcode" name="barcode">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="productCategory" class="form-label">الفئة *</label>
+                                <select class="form-select" id="productCategory" name="category_id" required>
+                                    <option value="">اختر الفئة</option>
+                                    {% for category in categories %}
+                                    <option value="{{ category.id }}">{{ category.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="productUnit" class="form-label">الوحدة</label>
+                                <select class="form-select" id="productUnit" name="unit">
+                                    <option value="قطعة">قطعة</option>
+                                    <option value="كيلو">كيلو</option>
+                                    <option value="لتر">لتر</option>
+                                    <option value="علبة">علبة</option>
+                                    <option value="كرتونة">كرتونة</option>
+                                    <option value="عبوة">عبوة</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label for="purchasePrice" class="form-label">سعر الشراء *</label>
+                                <input type="number" class="form-control" id="purchasePrice" name="cost_price" step="0.01" required>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label for="salePrice" class="form-label">سعر البيع *</label>
+                                <input type="number" class="form-control" id="salePrice" name="price" step="0.01" required>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label for="stockQuantity" class="form-label">الكمية *</label>
+                                <input type="number" class="form-control" id="stockQuantity" name="stock_quantity" required>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label for="minStock" class="form-label">الحد الأدنى</label>
+                                <input type="number" class="form-control" id="minStock" name="min_stock" value="5">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="productDescription" class="form-label">الوصف</label>
+                        <textarea class="form-control" id="productDescription" name="description" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="productImage" class="form-label">صورة المنتج</label>
+                        <input type="file" class="form-control" id="productImage" name="image" accept="image/*">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="submit" class="btn btn-primary" form="addProductForm">
+                    <i class="fas fa-save me-2"></i>
+                    حفظ المنتج
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Products management functions
+function editProduct(id) {
+    // Implementation for editing product
+    console.log('Edit product:', id);
+}
+
+function viewProduct(id) {
+    // Implementation for viewing product details
+    console.log('View product:', id);
+}
+
+function deleteProduct(id) {
+    if (confirm('هل أنت متأكد من حذف هذا المنتج؟')) {
+        // Implementation for deleting product
+        console.log('Delete product:', id);
+    }
+}
+
+function saveProduct() {
+    // Implementation for saving product
+    const form = document.getElementById('addProductForm');
+    if (form.checkValidity()) {
+        // Save product logic here
+        console.log('Save product');
+        // Close modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('addProductModal'));
+        modal.hide();
+    } else {
+        form.reportValidity();
+    }
+}
+
+function resetFilters() {
+    document.getElementById('searchProducts').value = '';
+    document.getElementById('categoryFilter').value = '';
+    document.getElementById('stockFilter').value = '';
+    // Reload products table
+}
+
+// تفعيل البحث والفلترة
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchProducts');
+    const categoryFilter = document.getElementById('categoryFilter');
+    const stockFilter = document.getElementById('stockFilter');
+
+    // البحث التلقائي
+    let searchTimeout;
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(function() {
+                applyFilters();
+            }, 500);
+        });
+    }
+
+    // فلترة الفئات
+    if (categoryFilter) {
+        categoryFilter.addEventListener('change', applyFilters);
+    }
+    if (stockFilter) {
+        stockFilter.addEventListener('change', applyFilters);
+    }
+
+    function applyFilters() {
+        const search = searchInput ? searchInput.value : '';
+        const category = categoryFilter ? categoryFilter.value : '';
+        const stock = stockFilter ? stockFilter.value : '';
+
+        const url = new URL(window.location);
+        url.searchParams.set('search', search);
+        url.searchParams.set('category', category);
+        url.searchParams.set('stock', stock);
+        url.searchParams.set('page', '1'); // العودة للصفحة الأولى
+
+        window.location.href = url.toString();
+    }
+});
+</script>
+{% endblock %}
